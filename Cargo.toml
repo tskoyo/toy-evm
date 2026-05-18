@@ -1,0 +1,11 @@
+[package]
+name = "toy-evm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Intentionally no dependencies — you're building this from scratch.
+# The only import you need is std.
+
+[dev-dependencies]
+# Tests only
