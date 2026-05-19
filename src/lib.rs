@@ -70,7 +70,7 @@ impl U256 {
     /// a + b, wrapping on overflow (modulo 2^256)
     pub fn wrapping_add(self, other: Self) -> Self {
         let mut result = [0u8; 32];
-        let mut carry: u16 = 0;
+        let mut carry = 0;
 
         for i in (0..32).rev() {
             let sum = self.0[i] as u16 + other.0[i] as u16 + carry;
@@ -83,7 +83,21 @@ impl U256 {
 
     /// a - b, wrapping on underflow
     pub fn wrapping_sub(self, other: Self) -> Self {
-        todo!("Exercise 1a: implement 256-bit wrapping subtraction")
+        let mut result = [0u8; 32];
+        let mut borrow = 0;
+
+        for i in (0..32).rev() {
+            let diff = self.0[i] as i16 - other.0[i] as i16 - borrow;
+            if diff < 0 {
+                result[i] = (diff + 256) as u8;
+                borrow = 1;
+            } else {
+                result[i] = diff as u8;
+                borrow = 0;
+            }
+        }
+
+        U256(result)
     }
 
     /// a * b, wrapping on overflow

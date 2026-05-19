@@ -15,9 +15,10 @@ fn run_bytecode(bytecode: &[u8]) -> (Evm, ExecutionResult) {
 
 #[test]
 fn exercise_1a_add_small() {
-    let a = U256::from_u64(665537);
-    let b = U256::from_u64(20);
-    assert_eq!(a.wrapping_add(b), U256::from_u64(665557));
+    let a = U256::from_u64(500);
+    let b = U256::from_u64(400);
+
+    assert_eq!(a.wrapping_add(b), U256::from_u64(900));
 }
 
 #[test]
