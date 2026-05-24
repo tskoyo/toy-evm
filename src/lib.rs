@@ -102,9 +102,55 @@ impl U256 {
 
     /// a * b, wrapping on overflow
     pub fn wrapping_mul(self, other: Self) -> Self {
-        todo!("Exercise 1a: implement 256-bit wrapping multiplication")
-    }
+        let mut result = [0u8; 32];
 
+        // For each byte position i in `self` (right to left)
+        for i in (0..32).rev() {
+            let mut carry: u32 = 0;
+
+            // For each byte position j in `other` (right to left)
+            for j in (0..32).rev() {
+                // Position in the result where this product contributes
+                // i=31, j=31 → pos 31 (rightmost, "ones place")
+                // i=30, j=31 → pos 30 (shifted left by one byte)
+                // i=31, j=30 → pos 30
+                // i=30, j=30 → pos 29
+                // Pattern: pos = i + j - 31
+                let pos = i as i32 + j as i32 - 31;
+
+                // If pos is negative, the product would overflow past byte 0
+                // We discard it (this is the "wrapping" part)
+                if pos < 0 {
+                    continue;
+                }
+                let pos = pos as usize;
+
+                // Multiply the two bytes — up to 255 × 255 = 65025
+                // Add the current value at this position, plus any carry from before
+                let product =
+                    (self.0[i] as u32) * (other.0[j] as u32) + (result[pos] as u32) + carry;
+
+                // Keep the low byte at this position
+                result[pos] = product as u8;
+
+                // Carry the rest to the next iteration
+                carry = product >> 8;
+            }
+
+            // After the inner loop, propagate any remaining carry leftward
+            // (but only if there's room — otherwise it wraps)
+            let mut k = i as i32 - 32; // one byte to the left of the last write
+            while carry > 0 && k >= 0 {
+                let k_usize = k as usize;
+                let sum = result[k_usize] as u32 + carry;
+                result[k_usize] = sum as u8;
+                carry = sum >> 8;
+                k -= 1;
+            }
+        }
+
+        U256(result)
+    }
     /// a / b (integer division), returns 0 if b is zero (EVM spec)
     pub fn wrapping_div(self, other: Self) -> Self {
         todo!("Exercise 1a: implement 256-bit division")
