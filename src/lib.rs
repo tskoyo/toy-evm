@@ -437,7 +437,7 @@ impl Evm {
                 let b = self.pop()?;
 
                 let res = a.wrapping_mul(b);
-                self.push(res);
+                self.push(res)?;
             }
             opcodes::SUB => {
                 let a = self.pop()?;
