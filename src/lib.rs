@@ -151,40 +151,112 @@ impl U256 {
 
         U256(result)
     }
+
     /// a / b (integer division), returns 0 if b is zero (EVM spec)
     pub fn wrapping_div(self, other: Self) -> Self {
-        todo!("Exercise 1a: implement 256-bit division")
+        if other.is_zero() {
+            return Self::ZERO;
+        }
+
+        // Shift-and-subtract long division
+        let mut quotient = [0u8; 32];
+        let mut remainder = Self::ZERO;
+
+        // Process each bit from most significant to least significant
+        for byte_idx in 0..32 {
+            for bit_idx in (0..8).rev() {
+                // Shift remainder left by 1 bit
+                remainder = remainder.shift_left_one();
+
+                // Bring down the next bit of the dividend
+                let bit = (self.0[byte_idx] >> bit_idx) & 1;
+                remainder.0[31] |= bit;
+
+                // If remainder >= divisor, subtract and set quotient bit
+                if !remainder.less_than(&other) {
+                    remainder = remainder.wrapping_sub(other);
+                    quotient[byte_idx] |= 1 << bit_idx;
+                }
+            }
+        }
+
+        U256(quotient)
     }
 
     /// a % b (modulo), returns 0 if b is zero
     pub fn wrapping_mod(self, other: Self) -> Self {
-        todo!("Exercise 1a: implement 256-bit modulo")
+        if other.is_zero() {
+            return Self::ZERO;
+        }
+
+        // remainder = a - (a / b) * b
+        let quotient = self.wrapping_div(other);
+        let product = quotient.wrapping_mul(other);
+        self.wrapping_sub(product)
     }
 
     pub fn is_zero(&self) -> bool {
-        todo!("Exercise 1a: check if all 32 bytes are zero")
+        self.0.iter().all(|&b| b == 0)
     }
 
     pub fn bitwise_and(self, other: Self) -> Self {
-        todo!("Exercise 1a: AND each byte pair")
+        let mut result = [0u8; 32];
+        for i in 0..32 {
+            result[i] = self.0[i] & other.0[i];
+        }
+        U256(result)
     }
 
     pub fn bitwise_or(self, other: Self) -> Self {
-        todo!("Exercise 1a: OR each byte pair")
+        let mut result = [0u8; 32];
+        for i in 0..32 {
+            result[i] = self.0[i] | other.0[i];
+        }
+        U256(result)
     }
 
     pub fn bitwise_not(self) -> Self {
-        todo!("Exercise 1a: NOT each byte")
+        let mut result = [0u8; 32];
+        for i in 0..32 {
+            result[i] = !self.0[i];
+        }
+        U256(result)
     }
 
     /// self < other (unsigned comparison)
     pub fn less_than(&self, other: &Self) -> bool {
-        todo!("Exercise 1a: compare big-endian byte arrays")
+        for i in 0..32 {
+            if self.0[i] < other.0[i] {
+                return true;
+            } else if self.0[i] > other.0[i] {
+                return false;
+            }
+        }
+        false // equal
     }
 
     /// self > other (unsigned comparison)
     pub fn greater_than(&self, other: &Self) -> bool {
-        todo!("Exercise 1a: compare big-endian byte arrays")
+        for i in 0..32 {
+            if self.0[i] > other.0[i] {
+                return true;
+            } else if self.0[i] < other.0[i] {
+                return false;
+            }
+        }
+        false // equal
+    }
+
+    /// Helper: shift the entire U256 left by 1 bit (needed for division)
+    fn shift_left_one(self) -> Self {
+        let mut result = [0u8; 32];
+        let mut carry = 0u8;
+        for i in (0..32).rev() {
+            let new_byte = (self.0[i] << 1) | carry;
+            carry = (self.0[i] >> 7) & 1;
+            result[i] = new_byte;
+        }
+        U256(result)
     }
 
     /// self == other
@@ -317,20 +389,20 @@ impl Evm {
                 return ExecutionResult::Stop;
             }
             match self.step() {
-                None => continue,
-                Some(result) => return result,
+                Ok(()) => continue,
+                Err(result) => return result,
             }
         }
     }
 
     /// Execute one instruction. Returns None to continue, Some to halt.
-    fn step(&mut self) -> Option<ExecutionResult> {
+    fn step(&mut self) -> Result<(), ExecutionResult> {
         let opcode = self.bytecode[self.pc];
 
         // Gas accounting — simplified: 3 gas per instruction
         // (real EVM has per-opcode costs, SSTORE costs 20000, etc.)
         if self.gas_remaining < 3 {
-            return Some(ExecutionResult::OutOfGas);
+            return Err(ExecutionResult::OutOfGas);
         }
         self.gas_remaining -= 3;
 
@@ -340,7 +412,7 @@ impl Evm {
             // ================================================
             opcodes::STOP => {
                 self.stopped = true;
-                return Some(ExecutionResult::Stop);
+                return Err(ExecutionResult::Stop);
             }
 
             // ================================================
@@ -355,19 +427,35 @@ impl Evm {
             // Hint: use self.pop()? and self.push(value)?
             // ================================================
             opcodes::ADD => {
-                todo!("Exercise 1b: pop two values, push their sum")
+                let a = self.pop()?;
+                let b = self.pop()?;
+                let res = a.wrapping_add(b);
+                self.push(res)?;
             }
             opcodes::MUL => {
-                todo!("Exercise 1b: pop two values, push their product")
+                let a = self.pop()?;
+                let b = self.pop()?;
+
+                let res = a.wrapping_mul(b);
+                self.push(res);
             }
             opcodes::SUB => {
-                todo!("Exercise 1b: pop two values, push a - b")
+                let a = self.pop()?;
+                let b = self.pop()?;
+                let res = a.wrapping_sub(b);
+                self.push(res)?;
             }
             opcodes::DIV => {
-                todo!("Exercise 1b: pop two values, push a / b")
+                let a = self.pop()?;
+                let b = self.pop()?;
+                let res = a.wrapping_div(b);
+                self.push(res)?;
             }
             opcodes::MOD => {
-                todo!("Exercise 1b: pop two values, push a % b")
+                let a = self.pop()?;
+                let b = self.pop()?;
+                let res = a.wrapping_mod(b);
+                self.push(res)?;
             }
 
             // ================================================
@@ -458,14 +546,7 @@ impl Evm {
                 todo!("Exercise 2a")
             }
             opcodes::MSIZE => {
-                let size = U256::from_u64(self.memory.len() as u64);
-                let res = self.push(size);
-
-                match res {
-                    Ok(()) => {}
-                    Err(Some(result)) => return Some(result),
-                    Err(None) => unreachable!(),
-                }
+                todo!("Exercise 2a")
             }
 
             // ================================================
@@ -505,62 +586,44 @@ impl Evm {
                 // Valid jump target — just advance pc
             }
             opcodes::PC => {
-                let pc_val = U256::from_u64(self.pc as u64);
-                let res = self.push(pc_val);
-
-                match res {
-                    Ok(()) => {}
-                    Err(Some(result)) => return Some(result),
-                    Err(None) => unreachable!(),
-                }
+                todo!("Exercise 2c")
             }
 
             // ================================================
             // RETURN / REVERT — read data from memory and halt
             // ================================================
             opcodes::RETURN => {
-                let offset = self.pop().unwrap().as_usize();
-
-                let size = self.pop().unwrap().as_usize();
-                self.expand_memory(offset + size);
-                let data = self.memory[offset..offset + size].to_vec();
-                return Some(ExecutionResult::Return(data));
+                todo!("Exercise 2d: read offset and size from stack, return memory slice")
             }
             opcodes::REVERT => {
-                let offset = self.pop().unwrap().as_usize();
-                let size = self.pop().unwrap().as_usize();
-                self.expand_memory(offset + size);
-                let data = self.memory[offset..offset + size].to_vec();
-                return Some(ExecutionResult::Revert(data));
+                todo!("Exercise 2d: read offset and size from stack, return memory slice as revert reason")
             }
 
             opcodes::INVALID => {
-                return Some(ExecutionResult::InvalidOpcode(opcode));
+                todo!("Exercise 2e: halt with InvalidOpcode")
             }
 
             _ => {
-                return Some(ExecutionResult::InvalidOpcode(opcode));
+                todo!("Exercise 2e: halt with InvalidOpcode")
             }
         }
 
         // Advance program counter (most opcodes advance by 1)
         self.pc += 1;
-        None
+        Ok(())
     }
 
     // ========================================================
     // Helper methods — these are given to you.
     // ========================================================
 
-    fn pop(&mut self) -> Result<U256, Option<ExecutionResult>> {
-        self.stack
-            .pop()
-            .ok_or(Some(ExecutionResult::StackUnderflow))
+    fn pop(&mut self) -> Result<U256, ExecutionResult> {
+        self.stack.pop().ok_or(ExecutionResult::StackUnderflow)
     }
 
-    fn push(&mut self, value: U256) -> Result<(), Option<ExecutionResult>> {
+    fn push(&mut self, value: U256) -> Result<(), ExecutionResult> {
         if self.stack.len() >= 1024 {
-            return Err(Some(ExecutionResult::StackOverflow));
+            return Err(ExecutionResult::StackOverflow);
         }
         self.stack.push(value);
         Ok(())
