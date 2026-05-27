@@ -468,25 +468,56 @@ impl Evm {
             // AND, OR, NOT: bitwise operations
             // ================================================
             opcodes::LT => {
-                todo!("Exercise 1c")
+                let a = self.pop()?;
+                let b = self.pop()?;
+                let res = if a.less_than(&b) {
+                    U256::ONE
+                } else {
+                    U256::ZERO
+                };
+                self.push(res)?;
             }
             opcodes::GT => {
-                todo!("Exercise 1c")
+                let a = self.pop()?;
+                let b = self.pop()?;
+                let res = if a.greater_than(&b) {
+                    U256::ONE
+                } else {
+                    U256::ZERO
+                };
+                self.push(res)?;
             }
             opcodes::EQ => {
-                todo!("Exercise 1c")
+                let a = self.pop()?;
+                let b = self.pop()?;
+                let res = if a == b { U256::ONE } else { U256::ZERO };
+                self.push(res)?;
             }
             opcodes::ISZERO => {
-                todo!("Exercise 1c")
+                let a = self.pop()?;
+                let res = if a == U256::ZERO {
+                    U256::ONE
+                } else {
+                    U256::ZERO
+                };
+                self.push(res)?;
             }
             opcodes::AND => {
-                todo!("Exercise 1c")
+                let a = self.pop()?;
+                let b = self.pop()?;
+                let res = a.bitwise_and(b);
+                self.push(res)?;
             }
             opcodes::OR => {
-                todo!("Exercise 1c")
+                let a = self.pop()?;
+                let b = self.pop()?;
+                let res = a.bitwise_or(b);
+                self.push(res)?;
             }
             opcodes::NOT => {
-                todo!("Exercise 1c")
+                let a = self.pop()?;
+                let res = a.bitwise_not();
+                self.push(res)?;
             }
 
             // ================================================
@@ -502,9 +533,7 @@ impl Evm {
             // Hint: the opcode value itself tells you n:
             //   n = opcode - PUSH1 + 1
             // ================================================
-            op if op >= opcodes::PUSH1 && op <= opcodes::PUSH32 => {
-                todo!("Exercise 1d: read n bytes from bytecode, push as U256")
-            }
+            op if op >= opcodes::PUSH1 && op <= opcodes::PUSH32 => {}
 
             // ================================================
             // TODO (Exercise 1e): Stack manipulation
