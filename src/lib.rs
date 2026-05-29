@@ -154,7 +154,7 @@ impl U256 {
 
     /// a / b (integer division), returns 0 if b is zero (EVM spec)
     pub fn wrapping_div(self, other: Self) -> Self {
-        if other.is_zero() {
+        if other == U256::ZERO {
             return Self::ZERO;
         }
 
@@ -185,7 +185,7 @@ impl U256 {
 
     /// a % b (modulo), returns 0 if b is zero
     pub fn wrapping_mod(self, other: Self) -> Self {
-        if other.is_zero() {
+        if other == U256::ZERO {
             return Self::ZERO;
         }
 
@@ -533,7 +533,18 @@ impl Evm {
             // Hint: the opcode value itself tells you n:
             //   n = opcode - PUSH1 + 1
             // ================================================
-            op if op >= opcodes::PUSH1 && op <= opcodes::PUSH32 => {}
+            op if op >= opcodes::PUSH1 && op <= opcodes::PUSH32 => {
+                let n = (op - opcodes::PUSH1 + 1) as usize;
+                if self.pc + n >= self.bytecode.len() {
+                    return Err(ExecutionResult::InvalidOpcode(op));
+                }
+                let data_bytes = &self.bytecode[self.pc + 1..self.pc + 1 + n];
+                let mut value_bytes = [0u8; 32];
+                value_bytes[32 - n..].copy_from_slice(data_bytes);
+                let value = U256(value_bytes);
+                self.push(value)?;
+                self.pc += n;
+            }
 
             // ================================================
             // TODO (Exercise 1e): Stack manipulation
@@ -629,12 +640,10 @@ impl Evm {
             }
 
             opcodes::INVALID => {
-                todo!("Exercise 2e: halt with InvalidOpcode")
+                return Err(ExecutionResult::InvalidOpcode(opcode));
             }
 
-            _ => {
-                todo!("Exercise 2e: halt with InvalidOpcode")
-            }
+            _ => return Err(ExecutionResult::InvalidOpcode(opcode)),
         }
 
         // Advance program counter (most opcodes advance by 1)
@@ -656,14 +665,6 @@ impl Evm {
         }
         self.stack.push(value);
         Ok(())
-    }
-
-    fn expand_memory(&mut self, new_size: usize) {
-        if new_size > self.memory.len() {
-            // Round up to nearest 32-byte word (EVM spec)
-            let padded = (new_size + 31) & !31;
-            self.memory.resize(padded, 0);
-        }
     }
 
     /// Peek at the top of the stack without removing it.
