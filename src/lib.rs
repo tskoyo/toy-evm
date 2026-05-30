@@ -557,13 +557,23 @@ impl Evm {
             // Hint for SWAP: n = opcode - SWAP1 + 1, swap stack[len-1] with stack[len-1-n]
             // ================================================
             opcodes::POP => {
-                todo!("Exercise 1e")
+                self.pop()?;
             }
             op if op >= opcodes::DUP1 && op <= opcodes::DUP16 => {
-                todo!("Exercise 1e")
+                let n = (op - opcodes::DUP1 + 1) as usize;
+                if self.stack.len() < n {
+                    return Err(ExecutionResult::StackUnderflow);
+                }
+                let value = self.stack[self.stack.len() - n];
+                self.push(value)?;
             }
             op if op >= opcodes::SWAP1 && op <= opcodes::SWAP16 => {
-                todo!("Exercise 1e")
+                let n = (op - opcodes::SWAP1 + 1) as usize;
+                if self.stack.len() < n {
+                    return Err(ExecutionResult::StackUnderflow);
+                }
+                let len = self.stack.len();
+                self.stack.swap(len - 1, len - 1 - n);
             }
 
             // ================================================
