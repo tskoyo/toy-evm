@@ -587,16 +587,29 @@ impl Evm {
             // Use self.expand_memory(offset + 32) before reading/writing.
             // ================================================
             opcodes::MLOAD => {
-                todo!("Exercise 2a")
+                let offset = self.pop()?.as_usize();
+                self.expand_memory(offset + 32);
+                let value_bytes = &self.memory[offset..offset + 32];
+                let mut value_array = [0u8; 32];
+                value_array.copy_from_slice(value_bytes);
+                let value = U256(value_array);
+                self.push(value)?;
             }
             opcodes::MSTORE => {
-                todo!("Exercise 2a")
+                let offset = self.pop()?.as_usize();
+                let value = self.pop()?;
+                self.expand_memory(offset + 32);
+                self.memory[offset..offset + 32].copy_from_slice(&value.0);
             }
             opcodes::MSTORE8 => {
-                todo!("Exercise 2a")
+                let offset = self.pop()?.as_usize();
+                let value = self.pop()?;
+                self.expand_memory(offset + 1);
+                self.memory[offset] = value.0[31]; // lowest byte
             }
             opcodes::MSIZE => {
-                todo!("Exercise 2a")
+                let size = U256::from_u64(self.memory.len() as u64);
+                self.push(size)?;
             }
 
             // ================================================
@@ -685,5 +698,12 @@ impl Evm {
     /// Get a storage value (for testing).
     pub fn get_storage(&self, key: &U256) -> U256 {
         self.storage.get(key).copied().unwrap_or(U256::ZERO)
+    }
+
+    /// Expand memory to at least new_size bytes, filling with zeros.
+    pub fn expand_memory(&mut self, new_size: usize) {
+        if self.memory.len() < new_size {
+            self.memory.resize(new_size, 0);
+        }
     }
 }
