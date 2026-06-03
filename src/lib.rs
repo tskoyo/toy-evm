@@ -644,26 +644,48 @@ impl Evm {
             // increment pc at the end — you've already set it.
             // ================================================
             opcodes::JUMP => {
-                todo!("Exercise 2c")
+                let dest = self.pop()?.as_usize();
+                if dest >= self.bytecode.len() || self.bytecode[dest] != opcodes::JUMPDEST {
+                    return Err(ExecutionResult::InvalidJump);
+                }
+                self.pc = dest;
             }
             opcodes::JUMPI => {
-                todo!("Exercise 2c")
+                let dest = self.pop()?.as_usize();
+                let condition = self.pop()?;
+                if condition != U256::ZERO {
+                    if dest >= self.bytecode.len() || self.bytecode[dest] != opcodes::JUMPDEST {
+                        return Err(ExecutionResult::InvalidJump);
+                    }
+                    self.pc = dest;
+                }
             }
             opcodes::JUMPDEST => {
-                // Valid jump target — just advance pc
+                // No-op
             }
             opcodes::PC => {
-                todo!("Exercise 2c")
+                let pc_value = U256::from_u64(self.pc as u64);
+                self.push(pc_value)?;
             }
 
             // ================================================
             // RETURN / REVERT — read data from memory and halt
             // ================================================
             opcodes::RETURN => {
-                todo!("Exercise 2d: read offset and size from stack, return memory slice")
+                let offset = self.pop()?.as_usize();
+                let size = self.pop()?.as_usize();
+                self.expand_memory(offset + size);
+                let data = self.memory[offset..offset + size].to_vec();
+                self.stopped = true;
+                return Err(ExecutionResult::Return(data));
             }
             opcodes::REVERT => {
-                todo!("Exercise 2d: read offset and size from stack, return memory slice as revert reason")
+                let offset = self.pop()?.as_usize();
+                let size = self.pop()?.as_usize();
+                self.expand_memory(offset + size);
+                let data = self.memory[offset..offset + size].to_vec();
+                self.stopped = true;
+                return Err(ExecutionResult::Revert(data));
             }
 
             opcodes::INVALID => {
