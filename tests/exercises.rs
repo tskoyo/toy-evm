@@ -648,7 +648,7 @@ fn exercise_3c_loop_sum_1_to_5() {
         0x5B, // JUMPDEST (loop_start, offset 4)
         0x80, // DUP1 (copy i)
         0x60, 0x06, // PUSH1 6 (limit)
-        0x10, // LT (i < 6?)
+        0x11, // GT (i > 6?)
         0x15, // ISZERO (negate)
         0x60, 0x18, // PUSH1 24 (loop_end)
         0x57, // JUMPI
@@ -707,6 +707,27 @@ fn exercise_3e_return_data() {
         }
         other => panic!("Expected Return, got {:?}", other),
     }
+}
+
+#[test]
+fn exercise_3f_random_opcode() {
+    let (evm, result) = run_bytecode(&[
+        0x60, 0x65, // PUSH1 0x65
+        0x60, 0x00, // PUSH1 0x00
+        0x52, // MSTORE
+        0x60, 0x32, // PUSH1 0x32
+        0x60, 0x20, // PUSH1 0x20
+        0x52, // MSTORE
+        0x60, 0x88, // PUSH1 0x88
+        0x60, 0x00, // PUSH1 0x00
+        0x52, // MSTORE
+        0x60, 0x00, // PUSH1 0x00
+        0x51, // MLOAD
+        0x00, // STOP
+    ]);
+
+    assert_eq!(result, ExecutionResult::Stop);
+    assert_eq!(evm.stack[0], U256::from_u64(0x88));
 }
 
 #[test]
