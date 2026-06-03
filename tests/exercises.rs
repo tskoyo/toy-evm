@@ -424,10 +424,10 @@ fn exercise_2b_sstore_sload() {
     // PUSH1 0xFF (value), PUSH1 0x00 (key), SSTORE
     // PUSH1 0x00 (key), SLOAD → 0xFF on stack
     let (evm, result) = run_bytecode(&[
-        0x60, 0xFF, // value
-        0x60, 0x00, // key = slot 0
+        0x60, 0xFF, // PUSH1 0xFF (255 in decimal)
+        0x60, 0x00, // PUSH1 0x00 (slot 0)
         0x55, // SSTORE
-        0x60, 0x00, // key = slot 0
+        0x60, 0x00, // PUSH1 0x00 (slot 0)
         0x54, // SLOAD
         0x00, // STOP
     ]);

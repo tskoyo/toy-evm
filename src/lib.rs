@@ -622,10 +622,14 @@ impl Evm {
             // In a real EVM, SSTORE costs 20000 gas for a fresh write.
             // ================================================
             opcodes::SLOAD => {
-                todo!("Exercise 2b")
+                let key = self.pop()?;
+                let value = self.storage.get(&key).copied().unwrap_or(U256::ZERO);
+                self.push(value)?;
             }
             opcodes::SSTORE => {
-                todo!("Exercise 2b")
+                let key = self.pop()?;
+                let value = self.pop()?;
+                self.storage.insert(key, value);
             }
 
             // ================================================
