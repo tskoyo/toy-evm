@@ -711,6 +711,7 @@ fn exercise_3e_return_data() {
 
 #[test]
 fn exercise_3f_random_opcode() {
+    // This opcode confirms that PUSH1 0x00 will overwrite memory, and that MLOAD reads the updated value
     let (evm, result) = run_bytecode(&[
         0x60, 0x65, // PUSH1 0x65
         0x60, 0x00, // PUSH1 0x00
